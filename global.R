@@ -193,14 +193,14 @@ a_b_testgroups <- KPI_data%>%
 #   count()
 
 ## number of sessions made by rcsp_ref
-rcsp_ref_session <- rcsp_ref%>%
-  dplyr::select(session_id)%>%
-  na.omit()%>%
-  count(session_id)
-count(rcsp_ref_session) ## 9468 sessions for rcsp_ref /  9467 when NA removed
-
-rcsp_ref_conversion_rate <- (count(rcsp_ref_conversion)/count(rcsp_ref_session)) * 100
-rcsp_ref_conversion_rate ## 0.2% conversion rate for rcsp_ref
+# rcsp_ref_session <- rcsp_ref%>%
+#   dplyr::select(session_id)%>%
+#   na.omit()%>%
+#   count(session_id)
+# count(rcsp_ref_session) ## 9468 sessions for rcsp_ref /  9467 when NA removed
+# 
+# rcsp_ref_conversion_rate <- (count(rcsp_ref_conversion)/count(rcsp_ref_session)) * 100
+# rcsp_ref_conversion_rate ## 0.2% conversion rate for rcsp_ref
 
 #### bounce rate for A/B testing
 # ## Bounce_rate for rcsp_ref
@@ -415,7 +415,7 @@ visitor_pageviews_sessions_num <- scale(visitor_pageviews_sessions_num[,c(2:3)])
 #                                          high = "#FC4E07"))
 
 ##### K means clustering
-# k2_visitor <- kmeans(visitor_pageviews_sessions_num, centers = 2, nstart = 25)
+k2_visitor <- kmeans(visitor_pageviews_sessions_num, centers = 2, nstart = 25)
 # # str(k2_visitor)
 # # k2_visitor
 # # remove(k2_visiotr)
@@ -430,23 +430,328 @@ visitor_pageviews_sessions_num <- scale(visitor_pageviews_sessions_num[,c(2:3)])
 #   ggplot(aes(num_pages, num_sessions, color = factor(cluster), label = state)) +
 # #   geom_text()
 # # 
-#  k3_visitor <- kmeans(visitor_pageviews_sessions_num, centers = 3, nstart = 25) ## kmeans with 3 clusters
-#  k4_visitor <- kmeans(visitor_pageviews_sessions_num, centers = 4, nstart = 25) ## kmeans with 4 clusters
-#  k5_visitor <- kmeans(visitor_pageviews_sessions_num, centers = 5, nstart = 25) ## kmeans with 5 clusters
-# # 
+ k3_visitor <- kmeans(visitor_pageviews_sessions_num, centers = 3, nstart = 25) ## kmeans with 3 clusters
+ k4_visitor <- kmeans(visitor_pageviews_sessions_num, centers = 4, nstart = 25) ## kmeans with 4 clusters
+ k5_visitor <- kmeans(visitor_pageviews_sessions_num, centers = 5, nstart = 25) ## kmeans with 5 clusters
+#
 # # plots to compare
-#  p1 <- fviz_cluster(k2_visitor, geom = "point", data = visitor_pageviews_sessions_num) + ggtitle("k = 2")
-#  p2 <- fviz_cluster(k3_visitor, geom = "point", data = visitor_pageviews_sessions_num) + ggtitle("k = 3")
-#  p3 <- fviz_cluster(k4_visitor, geom = "point", data = visitor_pageviews_sessions_num) + ggtitle("k = 4")
-#  p4 <- fviz_cluster(k5_visitor, geom = "point", data = visitor_pageviews_sessions_num) + ggtitle("k = 5")
-# # 
+ p1 <- fviz_cluster(k2_visitor, geom = "point", data = visitor_pageviews_sessions_num) + ggtitle("k = 2")
+ p2 <- fviz_cluster(k3_visitor, geom = "point", data = visitor_pageviews_sessions_num) + ggtitle("k = 3")
+ p3 <- fviz_cluster(k4_visitor, geom = "point", data = visitor_pageviews_sessions_num) + ggtitle("k = 4")
+ p4 <- fviz_cluster(k5_visitor, geom = "point", data = visitor_pageviews_sessions_num) + ggtitle("k = 5")
+#
 # ############# plot all graphs together  #######
- # grid.arrange(p1, p2, p3, p4, nrow = 2)
+ grid.arrange(p1, p2, p3, p4, nrow = 2)
+
+ #######  compute k-means clustering with k = 2  // the optimal clusters according to silhoutte
+ set.seed(123)
+ optimal_clusters_visitors <- kmeans(visitor_pageviews_sessions_num, 2, nstart = 25)
+ 
+ optimal_clust_viz <- fviz_cluster(optimal_clusters_visitors, data = visitor_pageviews_sessions_num)
+# optimal_clust_viz
+
+ 
+### Data has been preprocessed with the code below, exported and loaded
+ 
+#  all_conversion<- all_data%>%
+#    filter(page_type == "request/success")
+# # View(all_conversion)
+# 
+#  all_conversion.sel <- all_conversion%>%
+#    dplyr::select(test_groups, session_id, visitor_id, device_class, params)%>%
+#    na.omit() %>%
+#    dplyr::mutate(test_status = case_when(grepl(pattern = '"rcsp":"show"', test_groups) ~"test",
+#                                   str_detect(test_groups, pattern = '"rcsp":"show"', 
+#                                              negate = T)~ "control"),
+#           instant_booking = case_when(grepl(pattern = '"is_instant_booking":true', params)~"Instant",
+#                                       grepl(pattern = '"is_instant_booking":false', params)~"Not_instant"),
+#           user_verified = case_when(grepl(pattern = '"is_user_verified":true', params)~"Verified",
+#                                     grepl(pattern = '"is_user_verified":false', params)~"Not_verified"))
+#  
+#  
+# # View(all_conversion.sel)
+#  
+#  all_conversion_wide <- tidyr::separate(all_conversion.sel, col = params, sep = "total", into = c("params", "total_paid"))%>%
+#    tidyr::separate(col = total_paid, sep = ',"currency":"', into = c("total_paid", "rest"))%>%
+#    tidyr::separate(col = rest, sep = '"', into = c("currency", "rest_info"))%>%
+#    tidyr::separate(col = total_paid, sep = '":', into = c("waste", "total_paid"))%>%
+#    dplyr::select(-6,-9) %>%
+#    tidyr::separate(col=params, sep = '"days":', into = c("params", "days"))%>%
+#    tidyr::separate(col = days, sep = ',', into = c("days", "city", "country", "price", "tenant_fee",
+#                                             "landlord_fee")) %>%
+#    tidyr::separate(col = city, sep = '"', into = c("a", "b", "c", "d"))%>%
+#    dplyr::select(-a,-b,-c)%>%
+#    tidyr::separate(col = country, sep = '"', into = c("a","b","c","e"))%>%
+#    dplyr::select(-a,-b,-c)%>%
+#    tidyr::separate(col = price, sep = '"', into = c("a","b","c","f"))%>%
+#    dplyr::rename(price = c) %>%
+#    tidyr::separate(col = price, sep = ':', into = c("f", "price"))%>%
+#    dplyr::select(-a,-b,-f)%>%
+#    tidyr::separate(col = tenant_fee, sep = '"', into = c("a", "b", "c"))%>%
+#    tidyr::separate(col=c, sep = ":", into = c("g", "h"))%>%
+#    dplyr::rename(tenant_fee = h)%>%
+#    dplyr::select(-a,-b,-g)%>%
+#    tidyr::separate(col = landlord_fee, sep = '"', into = c("a","b","c"))%>%
+#    tidyr::separate(col = c, sep= ':', into = c("x","y"))%>%
+#    dplyr::rename(landlord_fee = y)%>%
+#    dplyr::select(-a,-b,-x)%>%
+#    dplyr::rename(city = d, country = e)
+# 
+# # View(all_conversion_wide) 
+# 
+#  ## number of sessions per visitor who converted
+#  all_conversion_var <- all_conversion_wide%>%
+#    group_by(visitor_id)%>%
+#    distinct(session_id, .keep_all = T )%>%
+#    count()%>%
+#    mutate(num_sessions = n)%>%
+#    dplyr::select(-n)
+# View(all_conversion_var) 
+# 
+# 
+# all_conversions_variables<- merge(all_conversion_var, all_conversion_wide)%>%
+#   distinct(visitor_id,.keep_all = T) 
+# 
+# 
+# all_conversions_variables <- all_conversions_variables%>%
+#   mutate(price = as.numeric(price), tenant_fee = as.numeric(tenant_fee), 
+#          landlord_fee = as.numeric(landlord_fee), total_paid = as.numeric(total_paid),
+#          device_class = factor(device_class, ordered = TRUE),
+#          test_status = factor(test_status, ordered = TRUE),
+#          instant_booking = factor(instant_booking, ordered = TRUE),
+#          user_verified = factor(user_verified, ordered = TRUE),
+#          num_sessions = as.numeric(num_sessions),
+#          days = as.numeric(days))%>%
+#   mutate(total_paid.EUR = case_when(currency == 'CHF' ~ total_paid*0.94,
+#                                     currency == 'GBP' ~ total_paid*1.18,
+#                                     currency == 'EUR' ~ total_paid))
+
+#View(all_conversions_variables) 
+#write.csv(all_conversions_variables, file = 'all_conversions_variables.csv') 
 
 
+all_conversions_variables <- read_csv("all_conversions_variables.csv")
+
+all_conversions_variables <- all_conversions_variables%>%
+  mutate(price = as.numeric(price), tenant_fee = as.numeric(tenant_fee), 
+         landlord_fee = as.numeric(landlord_fee), total_paid = as.numeric(total_paid),
+         device_class = factor(device_class, ordered = TRUE),
+         test_status = factor(test_status, ordered = TRUE),
+         instant_booking = factor(instant_booking, ordered = TRUE),
+         user_verified = factor(user_verified, ordered = TRUE),
+         num_sessions = as.numeric(num_sessions),
+         days = as.numeric(days))%>%
+  mutate(total_paid.EUR = case_when(currency == 'CHF' ~ total_paid*0.94,
+                                    currency == 'GBP' ~ total_paid*1.18,
+                                    currency == 'EUR' ~ total_paid))
+#glimpse(all_conversions_variables)
+
+###########  naive bayes classifier  ###########
+### Predicting whether a convertor will use our instant_booking feature
+all_conversions.modelvars <- all_conversions_variables%>%
+  dplyr::select(num_sessions, device_class, days, test_status, instant_booking, user_verified)
 
 
+#glimpse(all_conversions.modelvars)
+
+## splitting data
+set.seed(123)
+all_conversion_split_data <- initial_split(all_conversions.modelvars, prop = 0.7, strata = "instant_booking")
+train_all_conversion <- training(all_conversion_split_data)
+test_all_conversion <- testing(all_conversion_split_data)
+#table(train_all_conversion$instant_booking)
+#table(test_all_conversion$instant_booking)
+#View(train_all_conversion)
+
+# ###### h2o for naive bayes
+h2o.init()
+#
+# ## h2o does not accepted ordered factors
+h2o_train_allconversion_instant <- train_all_conversion %>%
+  mutate_if(is.factor, factor, ordered = FALSE) %>%
+  as.h2o()
+#
+h2o_test_allconversion_instant <- test_all_conversion%>%
+  mutate_if(is.factor, factor, ordered = FALSE) %>%
+  as.h2o()
+#
+x_h2o = setdiff(names(train_all_conversion), "instant_booking")
+#
+y_h2o <-  'instant_booking'
+#   #as.factor(instant_booking) #as.factor(train_all_conversion[,"instant_booking"])
+#
+# ## h2o naive model
+h2o_naive_bayes <- h2o.naiveBayes(
+  x = x_h2o,
+  y = y_h2o,
+  training_frame = h2o_train_allconversion_instant,
+  nfolds = 10,
+  laplace = 0
+)
+#
+# ## confusionmatrix to assess result
+h2o.confusionMatrix(h2o_naive_bayes)
+#
+#
+# ## parameter tuning
+# preprocess_h2o <- preProcess(train_all_conversion, method = c("BoxCox", "center", "scale", "pca"))
+#
+h2o_hyper_params <- list(
+  laplace = seq(0, 5, by = 1)
+)
+#
+h2o_grid <- h2o.grid(
+  algorithm = "naivebayes",
+  grid_id = "nb_id",
+  hyper_params = h2o_hyper_params,
+  training_frame = h2o_train_allconversion_instant,
+  nfolds = 10,
+  x = x_h2o,
+  y = y_h2o
+)
+#
+# ### sort model by accuracy
+ h2o_sorted_grid <- h2o.getGrid(grid_id = "nb_id", sort_by = "accuracy", decreasing = TRUE)
+ h2o_best_model_retrive <- h2o_sorted_grid@model_ids[[1]]
+ h20_best_model <- h2o.getModel(h2o_best_model_retrive)
+#
+# ## confusinmatrx
+h2o.confusionMatrix(h20_best_model)
+#
+# # ROC
+ h2o_auc <- h2o.auc(h20_best_model, xval = TRUE)
+#
+# ## fpr retrieve
+fpr <- h2o.performance(h20_best_model, xval = TRUE) %>%
+  h2o.fpr() %>%
+  .[["fpr"]]
+
+# ## tpr retrieve
+tpr <- h2o.performance(h20_best_model, xval = TRUE) %>%
+  h2o.tpr() %>%
+  .[["tpr"]]
+
+data.frame(fpr = fpr, tpr = tpr) %>%
+  ggplot(aes(fpr, tpr)) + geom_line() + ggtitle(sprintf("AUC: %f", h2o_auc))
+
+# ## evaluate model with training data
+# h2o.performance(h20_best_model, h2o_train_upgradeproduct)
+
+## evaluate model with test data
+test_model <- h2o.performance(h20_best_model, h2o_test_allconversion_instant, xval = TRUE)
+
+## use model to predict
+#h2o.predict(h20_best_model, newdata = h2o_test_allconversion_instant)
 
 
+#h2o.confusionMatrix(h20_best_model, newdata = h2o_test_allconversion_instant)
+test_confusionMatrix <- h2o.confusionMatrix(h20_best_model, newdata = h2o_test_allconversion_instant)
+
+#h2o.confusionMatrix(h20_best_model)
+
+ test_rmse <- h2o.rmse(test_model)
+ test_gini <- h2o.giniCoef(test_model)
+#
+#
+# # test_confusionMatrix <- test_confusionMatrix %>%
+# #   dplyr::select("Upgraded existing product line" = 1, "No upgrade of existing product line" = 2, Error, Rate)
+# # #View(test_confusionMatrix)
+# #h2o.precision(test_model)
+
+ test_prediction <- h2o.predict(h20_best_model, newdata = h2o_test_allconversion_instant)
+#
+test_prediction_with_rowid <- rowid_to_column(as.data.frame(test_prediction))
+test_data_with_rowid <- rowid_to_column(as.data.frame(h2o_test_allconversion_instant))
+
+# #View(test_prediction_with_rowid)
+test_predict_join <- full_join(test_data_with_rowid, test_prediction_with_rowid) %>%
+  dplyr::mutate(prediction_status = case_when(
+    instant_booking == predict ~ 'Correct',
+    instant_booking != predict ~ 'Wrong'
+  )) %>%
+  dplyr::select(rowid, instant_booking, predict, prediction_status)
+
+#h2o.shutdown()
+
+# #test_predict_join$upgrade_existingproduct_line[levels]
+#
+# #View(test_predict_join)
 
 
+#################################
+########################## predicting sales
+## What percentage of sales is explained by the following predictors
+## Assess the impact that certain predictors has on booking sales 
+
+
+##### Spliting dataset into training and testing samples
+set.seed(123)
+sample_all_conversions <- sample(c(TRUE, FALSE), nrow(all_conversions_variables), replace = T, prob = c(0.6,0.4))
+train_all_convern.lmvar <- all_conversions_variables[sample_all_conversions, ]
+test_all_convern.lmvar <- all_conversions_variables[!sample_all_conversions, ]
+
+## regression for qualitative predictors (categorical dataset -- factors) 
+options('contrasts' = c('contr.treatment','contr.treatment') )
+model4_all_convern_factors <- lm(total_paid.EUR ~ test_status + instant_booking +
+                                   user_verified, data = train_all_convern.lmvar)
+
+
+# add model diagnostics to our training data
+model4_results <- augment(model4_all_convern_factors, train_all_convern.lmvar)
+#View(model4_results)
+
+# ggplot(data = model4_results,mapping = aes(x = .fitted, y = .resid)) + 
+#   geom_ref_line(h = 0) +
+#   geom_point() +
+#   geom_smooth(se = FALSE) +
+#   ggtitle("Residuals vs Fitted")
+
+
+qq_plot <- qqnorm(model4_results$.resid)
+qq_plot <- qqline(model4_results$.resid)
+
+#tidy(model4_all_convern_factors)
+#summary(model4_all_convern_factors)
+
+booking_sales.predictioplot <- ggcoefstats(
+  x = stats::lm(formula = total_paid.EUR ~ test_status + instant_booking +
+                  user_verified, data = train_all_convern.lmvar),
+  ggtheme = ggplot2::theme_gray(), # changing the default theme
+  title = "Regression analysis: Predicting the influence of various factors on booking sales",
+) 
+
+#booking_sales.predictioplot
+
+#####  Model accuracy
+## R squared
+#rsquare(model4_all_convern_factors, data = test_all_convern.lmvar)
+r2_model4 <- rsquare(model4_all_convern_factors, data = train_all_convern.lmvar) ### This suggests that predictor
+## variables used can explain only 4.2% of variability in the data.
+
+### Residual Standard Error
+sigma(model4_all_convern_factors)  ## estimate RSE
+
+### 
+# plot(model4_all_convern_factors)
+# plot(model4_all_convern_factors, which = 4)
+# plot(model4_all_convern_factors, which = 1)
+# plot(model4_all_convern_factors, which = 2)
+# plot(model4_all_convern_factors, which = 3)
+# plot(model4_all_convern_factors, which = 5)
+
+#### Make predictions
+test_all_convern.lmvar%>%
+  add_predictions(model = model4_all_convern_factors)%>%
+  summarize(MSE = mean((total_paid.EUR - pred)^2))
+
+train_all_convern.lmvar%>%
+  add_predictions(model = model4_all_convern_factors)%>%
+  summarize(MSE = mean((total_paid.EUR - pred)^2))
+broom::glance(model4_all_convern_factors)
+
+var_influeunce<- caret::varImp(model4_all_convern_factors)
+
+sale_prediction <- test_all_convern.lmvar%>%
+  add_predictions(model = model4_all_convern_factors)%>%
+  as.data.frame() #%>%
+  #View()
